@@ -153,12 +153,15 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
       },
       deliver: async (payload: OutboundReplyPayload) => {
         if (!payload.text?.trim()) return;
+        // Reply to the comment thread if we have a comment_id, otherwise anchor to the context quote
         await sendCommentDocsMessage({
           baseUrl,
           agentSecret,
           docSlug: ntf.doc_slug,
           text: payload.text,
-          quote: (ntf.context || "").slice(0, 2000) || undefined,
+          ...(ntf.comment_id
+            ? { replyTo: ntf.comment_id }
+            : { quote: (ntf.context || "").slice(0, 2000) || undefined }),
         });
       },
       onRecordError: (err) => {

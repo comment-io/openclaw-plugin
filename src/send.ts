@@ -13,6 +13,7 @@ export type SendCommentDocsParams = {
   docSlug: string;
   text: string;
   quote?: string;
+  replyTo?: string;
 };
 
 async function commentDocsApi(
@@ -45,15 +46,19 @@ async function commentDocsApi(
 export async function sendCommentDocsMessage(
   params: SendCommentDocsParams,
 ): Promise<{ messageId: string }> {
-  const { baseUrl, agentSecret, token, docSlug, text, quote } = params;
+  const { baseUrl, agentSecret, token, docSlug, text, quote, replyTo } = params;
   const authToken = agentSecret ?? token;
 
-  // Post a comment anchored to the quoted passage
+  // Post a comment — either reply to existing or anchor to a quote
+  const body: Record<string, string> = { text, by: "openclaw-agent" };
+  if (replyTo) body.reply_to = replyTo;
+  else if (quote) body.quote = quote;
+
   const result = (await commentDocsApi(
     baseUrl,
     "POST",
     `/docs/${docSlug}/comments`,
-    { text, by: "openclaw-agent", ...(quote ? { quote } : {}) },
+    body,
     authToken,
   )) as { comment_id?: string };
   return { messageId: result?.comment_id ?? "new" };
