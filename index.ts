@@ -9,14 +9,22 @@ import {
 export { commentDocsPlugin } from "./channel.js";
 export { setCommentDocsRuntime } from "./src/runtime.js";
 
-const COMMENT_DOCS_GUIDANCE = `
-# Comment.io — Agent-Native Document Editor
+function buildCommentDocsGuidance(credentials: Array<{ accountId: string; secret: string; baseUrl: string }>): string {
+  const credBlock = credentials.length === 1
+    ? `Your agent secret: ${credentials[0].secret}\nBase URL: ${credentials[0].baseUrl}\nUse as: Authorization: Bearer ${credentials[0].secret}`
+    : credentials.map((c) =>
+        `- Account "${c.accountId}": secret=${c.secret}, baseUrl=${c.baseUrl}`
+      ).join("\n") + "\nUse the appropriate secret as: Authorization: Bearer {secret}";
+
+  return `# Comment.io — Agent-Native Document Editor
 
 You have the Comment.io plugin installed. Comment.io is a collaborative markdown editor where humans and agents work together in shared documents ("comms").
 
 ## Your credentials
 
-Check your Comment Docs channel config for agent secrets. Each configured account has an \`agentSecret\` field — use it as \`Authorization: Bearer {agent_secret}\` on all requests.
+${credBlock}
+
+Include the Bearer token on ALL requests — without it you appear as anonymous.
 
 ## API reference
 
@@ -24,8 +32,8 @@ Fetch https://comment.io/llms.txt at the start of each session for the full, up-
 
 ## Real-time notifications
 
-@mention notifications are delivered automatically through the comment-io channel — no polling needed. When someone mentions you in a document, you'll receive the notification inline.
-`.trim();
+@mention notifications are delivered automatically through the comment-io channel — no polling needed. When someone mentions you in a document, you'll receive the notification inline.`;
+}
 
 export default defineChannelPluginEntry({
   id: "comment-io",
@@ -38,15 +46,23 @@ export default defineChannelPluginEntry({
     // plugin load still trigger guidance injection.
     api.on("before_prompt_build", async () => {
       const accountIds = listCommentDocsAccountIds(api.config);
-      const hasRegistered = accountIds.some((id) => {
+      const credentials: Array<{ accountId: string; secret: string; baseUrl: string }> = [];
+      for (const id of accountIds) {
         try {
-          return resolveCommentDocsAccount({ cfg: api.config, accountId: id }).hasAgentSecret;
+          const acct = resolveCommentDocsAccount({ cfg: api.config, accountId: id });
+          if (acct.hasAgentSecret) {
+            credentials.push({
+              accountId: acct.accountId,
+              secret: acct.config.agentSecret!,
+              baseUrl: acct.baseUrl,
+            });
+          }
         } catch {
-          return false;
+          // skip misconfigured accounts
         }
-      });
-      if (!hasRegistered) return;
-      return { appendSystemContext: COMMENT_DOCS_GUIDANCE };
+      }
+      if (credentials.length === 0) return;
+      return { appendSystemContext: buildCommentDocsGuidance(credentials) };
     });
   },
 });
