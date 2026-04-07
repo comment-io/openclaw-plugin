@@ -29,16 +29,16 @@ const loadCommentDocsChannelRuntime = createLazyRuntimeNamedExport(
 );
 
 const resolveCommentDocsDmPolicy = createScopedDmSecurityResolver<ResolvedCommentDocsAccount>({
-  channelKey: "comment-docs",
+  channelKey: "comment-io",
   resolvePolicy: (account) => account.config.dmPolicy,
   resolveAllowFrom: (account) => account.config.allowFrom,
   policyPathSuffix: "dmPolicy",
-  normalizeEntry: (raw) => raw.replace(/^comment-docs:/i, "").trim(),
+  normalizeEntry: (raw) => raw.replace(/^comment-io:/i, "").trim(),
 });
 
 export const commentDocsPlugin = createChatChannelPlugin<ResolvedCommentDocsAccount>({
   base: {
-    id: "comment-docs",
+    id: "comment-io",
     meta: commentDocsMeta,
     capabilities: commentDocsCapabilities,
     reload: commentDocsReload,
@@ -103,22 +103,22 @@ export const commentDocsPlugin = createChatChannelPlugin<ResolvedCommentDocsAcco
       deliveryMode: "direct",
       textChunkLimit: 8000,
       resolveTarget: ({ to }) => {
-        const slug = to?.replace(/^comment-docs:/i, "").trim();
+        const slug = to?.replace(/^comment-io:/i, "").trim();
         if (!slug) {
-          return { ok: false, error: new Error("Requires --to comment-docs:{slug}") };
+          return { ok: false, error: new Error("Requires --to comment-io:{slug}") };
         }
         return { ok: true, to: slug };
       },
     },
     attachedResults: {
-      channel: "comment-docs",
+      channel: "comment-io",
       sendText: async ({ cfg, to, text, accountId }) => {
         const runtime = await loadCommentDocsChannelRuntime();
         const account = resolveCommentDocsAccount({ cfg, accountId });
         return await runtime.sendCommentDocsMessage({
           baseUrl: account.baseUrl,
           agentSecret: account.config.agentSecret ?? "",
-          docSlug: to, // resolveTarget already strips the comment-docs: prefix
+          docSlug: to, // resolveTarget already strips the comment-io: prefix
           text,
         });
       },

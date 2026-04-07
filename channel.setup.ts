@@ -18,7 +18,7 @@ import { commentDocsSetupWizard } from "./src/setup-surface.js";
 
 export const commentDocsSetupPlugin = createChatChannelPlugin<ResolvedCommentDocsAccount>({
   base: {
-    id: "comment-docs",
+    id: "comment-io",
     meta: commentDocsMeta,
     capabilities: commentDocsCapabilities,
     reload: commentDocsReload,

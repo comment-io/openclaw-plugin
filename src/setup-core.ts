@@ -8,7 +8,7 @@ import {
   type OpenClawConfig,
 } from "openclaw/plugin-sdk/setup";
 
-const channel = "comment-docs" as const;
+const channel = "comment-io" as const;
 
 export function setCommentDocsDmPolicy(
   cfg: OpenClawConfig,

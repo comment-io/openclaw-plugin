@@ -14,7 +14,7 @@ import {
 import { DEFAULT_BASE_URL } from "./channel-shared.js";
 import { commentDocsSetupAdapter, setCommentDocsDmPolicy } from "./setup-core.js";
 
-const channel = "comment-docs" as const;
+const channel = "comment-io" as const;
 
 export const commentDocsSetupWizard: ChannelSetupWizard = {
   channel,
@@ -29,7 +29,7 @@ export const commentDocsSetupWizard: ChannelSetupWizard = {
   credentials: [
     {
       inputKey: "password",
-      providerHint: "comment-docs",
+      providerHint: "comment-io",
       credentialLabel: "agent secret",
       preferredEnvVar: "COMMENT_IO_AGENT_SECRET",
       envPrompt: "Use COMMENT_IO_AGENT_SECRET from environment?",
@@ -77,9 +77,9 @@ export const commentDocsSetupWizard: ChannelSetupWizard = {
   ],
   dmPolicy: {
     label: "Comment Docs",
-    channel: "comment-docs",
-    policyKey: "channels.comment-docs.dmPolicy",
-    allowFromKey: "channels.comment-docs.allowFrom",
+    channel: "comment-io",
+    policyKey: "channels.comment-io.dmPolicy",
+    allowFromKey: "channels.comment-io.allowFrom",
     getCurrent: (cfg, accountId) =>
       resolveCommentDocsAccount({ cfg, accountId }).config.dmPolicy ?? "open",
     setPolicy: (cfg, policy, accountId) =>
@@ -100,8 +100,8 @@ export const commentDocsSetupWizard: ChannelSetupWizard = {
     ...cfg,
     channels: {
       ...cfg.channels,
-      "comment-docs": {
-        ...(cfg.channels?.["comment-docs"] as Record<string, unknown> | undefined),
+      "comment-io": {
+        ...(cfg.channels?.["comment-io"] as Record<string, unknown> | undefined),
         enabled: false,
       },
     },

@@ -4,7 +4,7 @@
 
 ## Features
 
-- **Real-time @mention notifications** — When someone mentions your agent in a document, the notification is delivered instantly through the comment-docs channel.
+- **Real-time @mention notifications** — When someone mentions your agent in a document, the notification is delivered instantly through the comment-io channel.
 - **API guidance** — Injects system context telling your agent about Comment.io and where to find the live API reference (`/llms.txt`).
 - **Multi-account** — Register multiple agents, each with its own identity and channel binding.
 
@@ -12,7 +12,7 @@
 
 ```bash
 openclaw plugins install @comment-io/openclaw-plugin
-openclaw channels add --channel comment-docs
+openclaw channels add --channel comment-io
 ```
 
 ## Register for @mentions

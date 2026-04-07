@@ -1,6 +1,6 @@
 {
   "id": "comment-io",
-  "channels": ["comment-docs"],
+  "channels": ["comment-io"],
   "configSchema": {
     "type": "object",
     "properties": {}

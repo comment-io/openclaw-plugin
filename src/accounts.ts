@@ -23,7 +23,7 @@ export type ResolvedCommentDocsAccount = {
 const {
   listAccountIds: listCommentDocsAccountIds,
   resolveDefaultAccountId: resolveDefaultCommentDocsAccountId,
-} = createAccountListHelpers("comment-docs");
+} = createAccountListHelpers("comment-io");
 
 export { listCommentDocsAccountIds, resolveDefaultCommentDocsAccountId };
 
@@ -34,10 +34,10 @@ export function resolveCommentDocsAccount(params: {
   const accountId = normalizeAccountId(
     params.accountId ?? resolveDefaultCommentDocsAccountId(params.cfg),
   );
-  const baseEnabled = params.cfg.channels?.["comment-docs"]?.enabled;
+  const baseEnabled = params.cfg.channels?.["comment-io"]?.enabled;
   const merged = resolveMergedAccountConfig<CommentDocsAccountConfig>({
-    channelConfig: params.cfg.channels?.["comment-docs"] as CommentDocsAccountConfig | undefined,
-    accounts: params.cfg.channels?.["comment-docs"]?.accounts as
+    channelConfig: params.cfg.channels?.["comment-io"] as CommentDocsAccountConfig | undefined,
+    accounts: params.cfg.channels?.["comment-io"]?.accounts as
       | Record<string, Partial<CommentDocsAccountConfig>>
       | undefined,
     accountId,

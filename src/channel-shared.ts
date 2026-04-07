@@ -19,12 +19,12 @@ import { CommentDocsChannelConfigSchema } from "./config-schema.js";
 export const DEFAULT_BASE_URL = "https://comment.io";
 
 export const commentDocsMeta = {
-  id: "comment-docs",
+  id: "comment-io",
   label: "Comment Docs",
   selectionLabel: "Comment Docs (comment.io)",
   detailLabel: "comment.io",
-  docsPath: "/channels/comment-docs",
-  docsLabel: "comment-docs",
+  docsPath: "/channels/comment-io",
+  docsLabel: "comment-io",
   blurb: "Collaborative markdown editor — @mention the agent in any doc.",
   aliases: ["cdocs", "commentdocs"],
   order: 80,
@@ -41,12 +41,12 @@ export const commentDocsCapabilities = {
   groupManagement: false,
 };
 
-export const commentDocsReload = { configPrefixes: ["channels.comment-docs"] };
+export const commentDocsReload = { configPrefixes: ["channels.comment-io"] };
 export const commentDocsConfigSchema = CommentDocsChannelConfigSchema;
 
 export const commentDocsConfigAdapter =
   createScopedChannelConfigAdapter<ResolvedCommentDocsAccount>({
-    sectionKey: "comment-docs",
+    sectionKey: "comment-io",
     listAccountIds: listCommentDocsAccountIds,
     resolveAccount: adaptScopedAccountAccessor(resolveCommentDocsAccount),
     defaultAccountId: resolveDefaultCommentDocsAccountId,
@@ -55,7 +55,7 @@ export const commentDocsConfigAdapter =
     formatAllowFrom: (allowFrom) =>
       formatNormalizedAllowFromEntries({
         allowFrom,
-        normalizeEntry: (entry) => entry.replace(/^comment-docs:/i, "").trim(),
+        normalizeEntry: (entry) => entry.replace(/^comment-io:/i, "").trim(),
       }),
   });
 

@@ -73,7 +73,7 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
 
   // Anonymous mode — no WebSocket, just hold open until abort
   if (!account.hasAgentSecret) {
-    ctx.log?.info("[comment-docs] Running in anonymous mode — skipping WebSocket notifications");
+    ctx.log?.info("[comment-io] Running in anonymous mode — skipping WebSocket notifications");
     return new Promise<void>((resolve) => {
       if (abortSignal.aborted) { resolve(); return; }
       abortSignal.addEventListener("abort", () => resolve(), { once: true });
@@ -81,10 +81,10 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
   }
 
   // Fetch standing orders from server — fail open
-  ctx.log?.info("[comment-docs] Fetching standing orders from /llms.txt");
+  ctx.log?.info("[comment-io] Fetching standing orders from /llms.txt");
   const standingOrders = await fetchStandingOrders(baseUrl);
   if (!standingOrders) {
-    ctx.log?.warn("[comment-docs] Could not fetch /llms.txt — proceeding without standing orders");
+    ctx.log?.warn("[comment-io] Could not fetch /llms.txt — proceeding without standing orders");
   }
 
   // Dedup set
@@ -105,14 +105,14 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
 
     // Client-side allowlist check
     if (!allowAll && !allowSet.has(ntf.from_handle.toLowerCase())) {
-      ctx.log?.info(`[comment-docs] Dropped notification from unlisted sender: ${ntf.from_handle}`);
+      ctx.log?.info(`[comment-io] Dropped notification from unlisted sender: ${ntf.from_handle}`);
       return;
     }
 
     // Resolve agent route for this document
     const route = channelRuntime.routing.resolveAgentRoute({
       cfg,
-      channel: "comment-docs",
+      channel: "comment-io",
       accountId: account.accountId,
       peer: { kind: "direct", id: ntf.doc_slug },
     });
@@ -125,8 +125,8 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
     const ctxPayload = {
       Body: `@${ntf.from_name} mentioned you in "${ntf.doc_title}": ${ntf.context}`,
       BodyForAgent: ntf.context,
-      From: `comment-docs:${ntf.from_handle}`,
-      To: `comment-docs:${ntf.doc_slug}`,
+      From: `comment-io:${ntf.from_handle}`,
+      To: `comment-io:${ntf.doc_slug}`,
       SessionKey: route.sessionKey,
       AccountId: account.accountId,
       MessageSid: ntf.id,
@@ -137,7 +137,7 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
     // Dispatch the reply
     await dispatchInboundReplyWithBase({
       cfg,
-      channel: "comment-docs",
+      channel: "comment-io",
       accountId: account.accountId,
       route,
       storePath,
@@ -162,10 +162,10 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
         });
       },
       onRecordError: (err) => {
-        ctx.log?.warn(`[comment-docs] Session record error: ${err}`);
+        ctx.log?.warn(`[comment-io] Session record error: ${err}`);
       },
       onDispatchError: (err, info) => {
-        ctx.log?.warn(`[comment-docs] Dispatch error (${info.kind}): ${err}`);
+        ctx.log?.warn(`[comment-io] Dispatch error (${info.kind}): ${err}`);
       },
     });
 
@@ -214,7 +214,7 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
 
     ws.on("open", () => {
       attempt = 0;
-      ctx.log?.info("[comment-docs] WebSocket connected");
+      ctx.log?.info("[comment-io] WebSocket connected");
 
       // Keepalive ping every 30s — also triggers catch-up burst on first ping
       currentPingInterval = setInterval(() => {
@@ -240,7 +240,7 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
         }
         // notification_read, notifications_all_read, pong — ignore
       } catch (err) {
-        ctx.log?.warn(`[comment-docs] WS message error: ${err}`);
+        ctx.log?.warn(`[comment-io] WS message error: ${err}`);
       }
     });
 
@@ -252,16 +252,16 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
       const reasonStr = reason.toString();
       // Permanent errors — do not reconnect
       if (code === 4401 || code === 4403 || code === 4426 || code === 1008) {
-        ctx.log?.warn(`[comment-docs] Permanent WS close ${code}: ${reasonStr} — not reconnecting`);
+        ctx.log?.warn(`[comment-io] Permanent WS close ${code}: ${reasonStr} — not reconnecting`);
         return;
       }
 
-      ctx.log?.info(`[comment-docs] WebSocket closed: ${code} ${reasonStr}`);
+      ctx.log?.info(`[comment-io] WebSocket closed: ${code} ${reasonStr}`);
       scheduleReconnect();
     });
 
     ws.on("error", (err: Error) => {
-      ctx.log?.warn(`[comment-docs] WebSocket error: ${err.message}`);
+      ctx.log?.warn(`[comment-io] WebSocket error: ${err.message}`);
       // on('close') fires after this, which handles cleanup + reconnect
     });
   }
@@ -270,7 +270,7 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
     if (abortSignal.aborted) return;
     const delay = Math.min(1000 * Math.pow(2, attempt), 60_000) + Math.random() * 1000;
     attempt++;
-    ctx.log?.info(`[comment-docs] Reconnecting in ${Math.round(delay)}ms (attempt ${attempt})`);
+    ctx.log?.info(`[comment-io] Reconnecting in ${Math.round(delay)}ms (attempt ${attempt})`);
     reconnectTimeout = setTimeout(connect, delay);
   }
 

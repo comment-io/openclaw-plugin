@@ -1,6 +1,6 @@
 {
   "name": "@comment-io/openclaw-plugin",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Official Comment.io plugin for OpenClaw — @mention notifications and agent API guidance",
   "type": "module",
   "exports": {
@@ -36,12 +36,12 @@
     ],
     "setupEntry": "./setup-entry.ts",
     "channel": {
-      "id": "comment-docs",
-      "label": "Comment Docs",
-      "selectionLabel": "Comment Docs (comment.io)",
+      "id": "comment-io",
+      "label": "Comment.io",
+      "selectionLabel": "Comment.io",
       "detailLabel": "comment.io",
-      "docsPath": "/channels/comment-docs",
-      "docsLabel": "comment-docs",
+      "docsPath": "/channels/comment-io",
+      "docsLabel": "comment-io",
       "blurb": "Collaborative markdown editor — @mention the agent in any doc.",
       "aliases": [
         "cdocs",

@@ -24,7 +24,7 @@ Fetch https://comment.io/llms.txt at the start of each session for the full, up-
 
 ## Real-time notifications
 
-@mention notifications are delivered automatically through the comment-docs channel — no polling needed. When someone mentions you in a document, you'll receive the notification inline.
+@mention notifications are delivered automatically through the comment-io channel — no polling needed. When someone mentions you in a document, you'll receive the notification inline.
 `.trim();
 
 export default defineChannelPluginEntry({
