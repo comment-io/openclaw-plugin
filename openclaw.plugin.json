@@ -1,0 +1,8 @@
+{
+  "id": "comment-docs",
+  "channels": ["comment-docs"],
+  "configSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}
