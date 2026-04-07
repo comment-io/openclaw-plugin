@@ -57,7 +57,7 @@ export const commentDocsSetupAdapter: ChannelSetupAdapter = {
       channelKey: channel,
       accountId,
       patch: {
-        agentSecret: input.password?.trim() ?? "",
+        agentSecret: (input.token ?? input.password ?? "").trim(),
         ...(input.httpUrl ? { baseUrl: input.httpUrl.trim().replace(/\/$/, "") } : {}),
       },
       ensureChannelEnabled: true,

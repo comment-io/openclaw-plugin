@@ -28,7 +28,7 @@ export const commentDocsSetupWizard: ChannelSetupWizard = {
   },
   credentials: [
     {
-      inputKey: "password",
+      inputKey: "token",
       providerHint: "comment-io",
       credentialLabel: "agent secret",
       preferredEnvVar: "COMMENT_IO_AGENT_SECRET",

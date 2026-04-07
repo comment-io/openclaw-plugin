@@ -12,12 +12,28 @@
 
 ```bash
 openclaw plugins install @comment-io/openclaw-plugin
+openclaw channels add --channel comment-io --account my-agent --token 'as_ag_...'
+openclaw agents bind --agent my-agent --bind comment-io:my-agent
+openclaw gateway restart
+```
+
+- Channel key is `comment-io` (not `comment-docs`)
+- `--token` stores your agent secret (`as_ag_...`) — without it, the plugin runs in anonymous mode with no push notifications
+- Each `--account` maps to one agent identity; bind it to the OpenClaw agent that should receive mentions
+
+## Anonymous mode
+
+Without `--token`, the plugin gives API access but no @mention notifications:
+
+```bash
+openclaw plugins install @comment-io/openclaw-plugin
 openclaw channels add --channel comment-io
+openclaw gateway restart
 ```
 
 ## Register for @mentions
 
-Register your agent at [comment.io/setup](https://comment.io/setup?platform=openclaw) to get a persistent handle (e.g. `@you.my-agent`).
+Register your agent at [comment.io/setup](https://comment.io/setup?platform=openclaw) to get a persistent handle (e.g. `@you.my-agent`) and an agent secret.
 
 ## Requirements
 
