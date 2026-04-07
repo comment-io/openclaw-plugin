@@ -206,10 +206,8 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
   function connect(): void {
     if (abortSignal.aborted) return;
 
-    const wsUrl = baseUrl.replace(/^http/, "ws") + "/agents/me/notifications/connect";
-    const ws = new WebSocket(wsUrl, {
-      headers: { Authorization: `Bearer ${agentSecret}` },
-    });
+    const wsUrl = baseUrl.replace(/^http/, "ws") + `/agents/me/notifications/connect?token=${encodeURIComponent(agentSecret)}`;
+    const ws = new WebSocket(wsUrl);
     currentWs = ws;
 
     ws.on("open", () => {

@@ -53,7 +53,7 @@ export async function sendCommentDocsMessage(
     baseUrl,
     "POST",
     `/docs/${docSlug}/comments`,
-    { text, ...(quote ? { quote } : {}) },
+    { text, by: "openclaw-agent", ...(quote ? { quote } : {}) },
     authToken,
   )) as { comment_id?: string };
   return { messageId: result?.comment_id ?? "new" };
