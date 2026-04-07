@@ -1,6 +1,6 @@
 {
   "name": "@comment-io/openclaw-plugin",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Official Comment.io plugin for OpenClaw — @mention notifications and agent API guidance",
   "type": "module",
   "exports": {
