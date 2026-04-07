@@ -52,7 +52,22 @@ export const commentDocsPlugin = createChatChannelPlugin<ResolvedCommentDocsAcco
     setup: commentDocsSetupAdapter,
     status: createComputedAccountStatusAdapter<ResolvedCommentDocsAccount>({
       defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
-      collectStatusIssues: () => [],
+      collectStatusIssues: (accounts) => {
+        const issues: Array<{ channel: string; accountId: string; kind: string; message: string; fix?: string }> = [];
+        for (const acct of accounts) {
+          if (!acct.enabled) continue;
+          if (!acct.extra?.hasAgentSecret) {
+            issues.push({
+              channel: "comment-io",
+              accountId: acct.accountId,
+              kind: "config",
+              message: `Account "${acct.accountId}" has no agent secret — running in anonymous mode. @mention notifications and WebSocket push are disabled.`,
+              fix: `openclaw channels add --channel comment-io --account ${acct.accountId} --token 'as_ag_...'`,
+            });
+          }
+        }
+        return issues;
+      },
       buildChannelSummary: ({ snapshot }) => ({
         configured: snapshot.configured ?? false,
         enabled: snapshot.enabled ?? false,
@@ -73,7 +88,7 @@ export const commentDocsPlugin = createChatChannelPlugin<ResolvedCommentDocsAcco
         name: account.name,
         enabled: account.enabled,
         configured: account.configured,
-        extra: { baseUrl: account.baseUrl },
+        extra: { baseUrl: account.baseUrl, hasAgentSecret: account.hasAgentSecret },
       }),
     }),
     gateway: {
