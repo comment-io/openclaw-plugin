@@ -54,6 +54,9 @@
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.4.1"
     },
+    "build": {
+      "openclawVersion": "2026.4.5"
+    },
     "compat": {
       "pluginApi": ">=2026.4.1"
     },
