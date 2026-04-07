@@ -59,10 +59,12 @@ export const commentDocsPlugin = createChatChannelPlugin<ResolvedCommentDocsAcco
         baseUrl: snapshot.extra?.baseUrl ?? null,
       }),
       probeAccount: async ({ account }) => {
+        // Anonymous accounts have no secret to verify — skip the probe
+        if (!account.hasAgentSecret) return { ok: true, statusCode: 200 };
         const runtime = await loadCommentDocsChannelRuntime();
         const result = await runtime.verifyCommentDocsAgent(
           account.baseUrl,
-          account.config.agentSecret,
+          account.config.agentSecret!,
         );
         return { ok: result.ok, statusCode: result.ok ? 200 : 401 };
       },
@@ -115,7 +117,7 @@ export const commentDocsPlugin = createChatChannelPlugin<ResolvedCommentDocsAcco
         const account = resolveCommentDocsAccount({ cfg, accountId });
         return await runtime.sendCommentDocsMessage({
           baseUrl: account.baseUrl,
-          agentSecret: account.config.agentSecret,
+          agentSecret: account.config.agentSecret ?? "",
           docSlug: to, // resolveTarget already strips the comment-docs: prefix
           text,
         });

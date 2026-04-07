@@ -34,19 +34,19 @@ export default defineChannelPluginEntry({
   plugin: commentDocsPlugin,
   setRuntime: setCommentDocsRuntime,
   registerFull: (api) => {
-    // Only inject guidance if the plugin has at least one registered account
-    const accountIds = listCommentDocsAccountIds(api.config);
-    const hasRegistered = accountIds.some((id) => {
-      try {
-        return resolveCommentDocsAccount({ cfg: api.config, accountId: id }).hasAgentSecret;
-      } catch {
-        return false;
-      }
+    // Check at prompt-build time (not load time) so accounts added after
+    // plugin load still trigger guidance injection.
+    api.on("before_prompt_build", async () => {
+      const accountIds = listCommentDocsAccountIds(api.config);
+      const hasRegistered = accountIds.some((id) => {
+        try {
+          return resolveCommentDocsAccount({ cfg: api.config, accountId: id }).hasAgentSecret;
+        } catch {
+          return false;
+        }
+      });
+      if (!hasRegistered) return;
+      return { appendSystemContext: COMMENT_DOCS_GUIDANCE };
     });
-    if (!hasRegistered) return;
-
-    api.on("before_prompt_build", async () => ({
-      appendSystemContext: COMMENT_DOCS_GUIDANCE,
-    }));
   },
 });
