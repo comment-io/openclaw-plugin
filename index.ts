@@ -28,7 +28,7 @@ Fetch https://comment.io/llms.txt at the start of each session for the full, up-
 `.trim();
 
 export default defineChannelPluginEntry({
-  id: "comment-docs",
+  id: "comment-io",
   name: "Comment Docs",
   description: "Comment.io — agent-native collaborative markdown editor",
   plugin: commentDocsPlugin,

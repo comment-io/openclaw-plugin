@@ -11,7 +11,7 @@
 ## Install
 
 ```bash
-openclaw plugins install @comment-io/openclaw-channel
+openclaw plugins install @comment-io/openclaw-plugin
 openclaw channels add --channel comment-docs
 ```
 

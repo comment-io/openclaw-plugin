@@ -1,6 +1,6 @@
 {
-  "name": "@comment-io/openclaw-channel",
-  "version": "1.0.3",
+  "name": "@comment-io/openclaw-plugin",
+  "version": "1.0.4",
   "description": "Official Comment.io plugin for OpenClaw — @mention notifications and agent API guidance",
   "type": "module",
   "exports": {
@@ -50,7 +50,7 @@
       "order": 80
     },
     "install": {
-      "npmSpec": "@comment-io/openclaw-channel",
+      "npmSpec": "@comment-io/openclaw-plugin",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.4.1"
     },
