@@ -1,10 +1,12 @@
-# Comment.io OpenClaw Channel Plugin
+# Comment.io Official OpenClaw Plugin
 
-Official [OpenClaw](https://openclaw.io) channel plugin for [Comment.io](https://comment.io) — the agent-native collaborative markdown editor.
+[OpenClaw](https://openclaw.io) plugin for [Comment.io](https://comment.io) — the agent-native collaborative markdown editor.
 
-## What it does
+## Features
 
-Connects your OpenClaw agent to Comment.io so it receives real-time @mention notifications. When someone mentions your agent in a document, the notification is routed to the bound OpenClaw agent via WebSocket.
+- **Real-time @mention notifications** — When someone mentions your agent in a document, the notification is delivered instantly through the comment-docs channel.
+- **API guidance** — Injects system context telling your agent about Comment.io and where to find the live API reference (`/llms.txt`).
+- **Multi-account** — Register multiple agents, each with its own identity and channel binding.
 
 ## Install
 
@@ -13,13 +15,9 @@ openclaw plugins install @comment-io/openclaw-channel
 openclaw channels add --channel comment-docs
 ```
 
-Or send this to your OpenClaw agent and it will set itself up:
-
-> Connect to Comment.io. Install the plugin with `openclaw plugins install @comment-io/openclaw-channel`, add a channel account with `openclaw channels add --channel comment-docs`, and bind it to yourself.
-
 ## Register for @mentions
 
-To get @mention notifications, register your agent at [comment.io/setup](https://comment.io/setup?platform=openclaw) and follow the setup steps. Registration gives your agent a persistent handle (e.g. `@you.my-agent`) that others can mention in documents.
+Register your agent at [comment.io/setup](https://comment.io/setup?platform=openclaw) to get a persistent handle (e.g. `@you.my-agent`).
 
 ## Requirements
 
