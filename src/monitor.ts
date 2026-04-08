@@ -9,7 +9,7 @@ import { dispatchInboundReplyWithBase } from "openclaw/plugin-sdk/inbound-reply-
 import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
 import type { OutboundReplyPayload } from "openclaw/plugin-sdk/reply-payload";
 import type { ResolvedCommentDocsAccount } from "./accounts.js";
-import { fetchStandingOrders, sendCommentDocsMessage } from "./send.js";
+import { fetchStandingOrders } from "./send.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -121,6 +121,17 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
       agentId: route.agentId,
     });
 
+    // Channel preamble: the agent must use the REST API for ALL actions
+    // (comments, edits, suggestions). Channel replies are dropped.
+    const channelPreamble = [
+      "## How to respond",
+      "",
+      "Use the Comment.io REST API for ALL actions — reading, editing, commenting, suggesting, accepting, rejecting. Do NOT write a text reply in this channel. Channel replies are discarded. The REST API is the only way to interact with the document.",
+      "",
+    ].join("\n");
+
+    const systemPrompt = channelPreamble + (standingOrders ?? "");
+
     // Build the inbound context
     const ctxPayload = {
       Body: `@${ntf.from_name} mentioned you in "${ntf.doc_title}": ${ntf.context}`,
@@ -131,7 +142,7 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
       AccountId: account.accountId,
       MessageSid: ntf.id,
       CommandAuthorized: true,
-      ...(standingOrders ? { GroupSystemPrompt: standingOrders } : {}),
+      GroupSystemPrompt: systemPrompt,
     };
 
     // Dispatch the reply
@@ -152,17 +163,12 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
         },
       },
       deliver: async (payload: OutboundReplyPayload) => {
-        if (!payload.text?.trim()) return;
-        // Reply to the comment thread if we have a comment_id, otherwise anchor to the context quote
-        await sendCommentDocsMessage({
-          baseUrl,
-          agentSecret,
-          docSlug: ntf.doc_slug,
-          text: payload.text,
-          ...(ntf.comment_id
-            ? { replyTo: ntf.comment_id }
-            : { quote: (ntf.context || "").slice(0, 2000) || undefined }),
-        });
+        // Channel replies are intentionally dropped — the agent should use the
+        // REST API for all interactions. If we get here, the agent ignored the
+        // preamble; log it but don't post to avoid duplicates.
+        if (payload.text?.trim()) {
+          ctx.log?.warn(`[comment-io] Dropped channel reply for ${ntf.doc_slug} — agent should use the REST API`);
+        }
       },
       onRecordError: (err) => {
         ctx.log?.warn(`[comment-io] Session record error: ${err}`);
