@@ -50,7 +50,7 @@ export async function sendCommentDocsMessage(
   const authToken = agentSecret ?? token;
 
   // Post a comment — either reply to existing or anchor to a quote
-  const body: Record<string, string> = { text, by: "openclaw-agent" };
+  const body: Record<string, string> = { text };
   if (replyTo) body.reply_to = replyTo;
   else if (quote) body.quote = quote;
 
