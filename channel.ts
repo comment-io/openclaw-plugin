@@ -61,7 +61,7 @@ export const commentDocsPlugin = createChatChannelPlugin<ResolvedCommentDocsAcco
               channel: "comment-io",
               accountId: acct.accountId,
               kind: "config",
-              message: `Account "${acct.accountId}" has no agent secret — running in anonymous mode. @mention notifications and WebSocket push are disabled.`,
+              message: `Account "${acct.accountId}" has no agent secret — running in anonymous mode. @mention notifications are disabled.`,
               fix: `openclaw channels add --channel comment-io --account ${acct.accountId} --token 'as_ag_...'`,
             });
           }

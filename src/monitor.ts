@@ -1,10 +1,10 @@
 /**
- * Comment Docs gateway monitor — WebSocket notification stream.
+ * Comment Docs gateway monitor — daemon-backed notification stream.
  *
- * Connects to Comment Docs' agent WebSocket endpoint, receives @mention
- * notifications in real-time, and dispatches them to the agent session.
+ * Consumes Comment.io daemon notification leases and dispatches them to the
+ * agent session.
  */
-import WebSocket from "ws";
+import { spawn } from "node:child_process";
 import { dispatchInboundReplyWithBase } from "openclaw/plugin-sdk/inbound-reply-dispatch";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
 import type { OutboundReplyPayload } from "openclaw/plugin-sdk/reply-payload";
@@ -29,11 +29,7 @@ interface CommentDocsNotification {
 }
 
 type WsMessage =
-  | { type: "notification_catchup"; notifications: CommentDocsNotification[]; unread_count: number }
-  | { type: "notification_appended"; notification: CommentDocsNotification; unread_count: number }
-  | { type: "notification_read"; id: string; unread_count: number }
-  | { type: "notifications_all_read"; unread_count: number }
-  | { type: "pong" };
+  | { timeout?: boolean; error?: string; claim_id?: string; notification?: CommentDocsNotification };
 
 export type CommentDocsMonitorContext = {
   account: ResolvedCommentDocsAccount;
@@ -71,9 +67,9 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
   const allowSet = new Set(allowFrom.map((h: string) => h.toLowerCase()));
   const allowAll = allowSet.has("*") || allowSet.size === 0;
 
-  // Anonymous mode — no WebSocket, just hold open until abort
+  // Anonymous mode — no daemon notifications, just hold open until abort
   if (!account.hasAgentSecret) {
-    ctx.log?.info("[comment-io] Running in anonymous mode — skipping WebSocket notifications");
+    ctx.log?.info("[comment-io] Running in anonymous mode — skipping daemon notifications");
     return new Promise<void>((resolve) => {
       if (abortSignal.aborted) { resolve(); return; }
       abortSignal.addEventListener("abort", () => resolve(), { once: true });
@@ -98,15 +94,15 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
   }
 
   // Process a single notification
-  async function processNotification(ntf: CommentDocsNotification): Promise<void> {
-    if (seenIds.has(ntf.id)) return;
+  async function processNotification(ntf: CommentDocsNotification): Promise<"dispatched" | "filtered" | "duplicate"> {
+    if (seenIds.has(ntf.id)) return "duplicate";
     seenIds.add(ntf.id);
     trimSeenIds();
 
     // Client-side allowlist check
     if (!allowAll && !allowSet.has(ntf.from_handle.toLowerCase())) {
       ctx.log?.info(`[comment-io] Dropped notification from unlisted sender: ${ntf.from_handle}`);
-      return;
+      return "filtered";
     }
 
     // Resolve agent route for this document
@@ -178,118 +174,105 @@ export async function monitorCommentDocsAccount(ctx: CommentDocsMonitorContext):
       },
     });
 
-    // Acknowledge the notification
-    try {
-      await fetch(`${baseUrl}/agents/me/notifications/${ntf.id}/read`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${agentSecret}`,
-          "Content-Type": "application/json",
-        },
-      });
-    } catch {
-      // Non-fatal — will be marked read on next catchup
-    }
+    return "dispatched";
   }
 
-  // WebSocket connection with reconnect
-  let attempt = 0;
-  let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
-  let currentWs: WebSocket | null = null;
-  let currentPingInterval: ReturnType<typeof setInterval> | null = null;
+  const profile = account.accountId;
+  ctx.log?.info(`[comment-io] Starting daemon notification watcher for profile ${profile}`);
 
-  // Register abort handler ONCE outside connect() to avoid listener accumulation
-  abortSignal.addEventListener(
-    "abort",
-    () => {
-      if (currentPingInterval) clearInterval(currentPingInterval);
-      currentPingInterval = null;
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-      reconnectTimeout = null;
-      if (currentWs) currentWs.close();
-      currentWs = null;
-    },
-    { once: true },
-  );
+  while (!abortSignal.aborted) {
+    const envelope = await waitForNotification(profile, abortSignal, ctx.log);
+    if (!envelope || abortSignal.aborted) continue;
+    if (envelope.timeout) continue;
+    if (!envelope.claim_id || !envelope.notification) {
+      ctx.log?.warn("[comment-io] Daemon returned malformed notification payload");
+      continue;
+    }
 
-  function connect(): void {
-    if (abortSignal.aborted) return;
-
-    const wsUrl = baseUrl.replace(/^http/, "ws") + `/agents/me/notifications/connect?token=${encodeURIComponent(agentSecret)}`;
-    const ws = new WebSocket(wsUrl);
-    currentWs = ws;
-
-    ws.on("open", () => {
-      attempt = 0;
-      ctx.log?.info("[comment-io] WebSocket connected");
-
-      // Keepalive ping every 30s — also triggers catch-up burst on first ping
-      currentPingInterval = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "ping" }));
-        }
-      }, 30_000);
-
-      // Send first ping immediately to trigger catch-up
-      ws.send(JSON.stringify({ type: "ping" }));
-    });
-
-    ws.on("message", async (data: WebSocket.Data) => {
-      try {
-        const msg = JSON.parse(data.toString()) as WsMessage;
-
-        if (msg.type === "notification_catchup") {
-          for (const ntf of msg.notifications) {
-            await processNotification(ntf);
-          }
-        } else if (msg.type === "notification_appended") {
-          await processNotification(msg.notification);
-        }
-        // notification_read, notifications_all_read, pong — ignore
-      } catch (err) {
-        ctx.log?.warn(`[comment-io] WS message error: ${err}`);
+    try {
+      const result = await processNotification(envelope.notification);
+      if (result === "duplicate") {
+        await releaseClaim(envelope.claim_id, ctx.log);
+      } else {
+        await ackClaim(envelope.claim_id, ctx.log);
       }
+    } catch (err) {
+      ctx.log?.warn(`[comment-io] Dispatch failed, releasing claim ${envelope.claim_id}: ${err}`);
+      await releaseClaim(envelope.claim_id, ctx.log);
+    }
+  }
+}
+
+function waitForNotification(
+  profile: string,
+  abortSignal: AbortSignal,
+  log?: { info: (msg: string) => void; warn: (msg: string) => void },
+): Promise<WsMessage | null> {
+  return new Promise((resolve) => {
+    const child = spawn("comment", ["notifications", "wait", "--profile", profile, "--timeout", "30m"], {
+      stdio: ["ignore", "pipe", "pipe"],
     });
-
-    ws.on("close", (code: number, reason: Buffer) => {
-      if (currentPingInterval) clearInterval(currentPingInterval);
-      currentPingInterval = null;
-      currentWs = null;
-
-      const reasonStr = reason.toString();
-      // Permanent errors — do not reconnect
-      if (code === 4401 || code === 4403 || code === 4426 || code === 1008) {
-        ctx.log?.warn(`[comment-io] Permanent WS close ${code}: ${reasonStr} — not reconnecting`);
+    let stdout = "";
+    const abort = () => {
+      child.kill("SIGTERM");
+      resolve(null);
+    };
+    abortSignal.addEventListener("abort", abort, { once: true });
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString("utf-8");
+    });
+    child.stderr.on("data", (chunk) => {
+      log?.warn(`[comment-io] notification wait stderr: ${chunk.toString("utf-8").trim()}`);
+    });
+    child.on("error", (err) => {
+      abortSignal.removeEventListener("abort", abort);
+      log?.warn(`[comment-io] notification wait failed: ${err.message}`);
+      setTimeout(() => resolve({ timeout: true, error: err.message }), 5000);
+    });
+    child.on("exit", () => {
+      abortSignal.removeEventListener("abort", abort);
+      const trimmed = stdout.trim();
+      if (!trimmed) {
+        resolve({ timeout: true });
         return;
       }
-
-      ctx.log?.info(`[comment-io] WebSocket closed: ${code} ${reasonStr}`);
-      scheduleReconnect();
+      try {
+        resolve(JSON.parse(trimmed) as WsMessage);
+      } catch (err) {
+        log?.warn(`[comment-io] invalid notification wait JSON: ${err}`);
+        resolve({ timeout: true });
+      }
     });
+  });
+}
 
-    ws.on("error", (err: Error) => {
-      ctx.log?.warn(`[comment-io] WebSocket error: ${err.message}`);
-      // on('close') fires after this, which handles cleanup + reconnect
+async function ackClaim(claimId: string, log?: { info: (msg: string) => void; warn: (msg: string) => void }): Promise<void> {
+  await runClaimCommand("ack", claimId, log);
+}
+
+async function releaseClaim(claimId: string, log?: { info: (msg: string) => void; warn: (msg: string) => void }): Promise<void> {
+  await runClaimCommand("release", claimId, log);
+}
+
+function runClaimCommand(
+  op: "ack" | "release",
+  claimId: string,
+  log?: { info: (msg: string) => void; warn: (msg: string) => void },
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("comment", ["notifications", op, claimId], { stdio: ["ignore", "pipe", "pipe"] });
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString("utf-8");
     });
-  }
-
-  function scheduleReconnect(): void {
-    if (abortSignal.aborted) return;
-    const delay = Math.min(1000 * Math.pow(2, attempt), 60_000) + Math.random() * 1000;
-    attempt++;
-    ctx.log?.info(`[comment-io] Reconnecting in ${Math.round(delay)}ms (attempt ${attempt})`);
-    reconnectTimeout = setTimeout(connect, delay);
-  }
-
-  // Start the connection
-  connect();
-
-  // Hold open until abort
-  return new Promise<void>((resolve) => {
-    if (abortSignal.aborted) {
-      resolve();
-      return;
-    }
-    abortSignal.addEventListener("abort", () => resolve(), { once: true });
+    child.on("exit", (code) => {
+      if (code === 0) {
+        log?.info(`[comment-io] ${op}ed notification claim ${claimId}`);
+        resolve();
+      } else {
+        reject(new Error(stderr.trim() || `${op} failed with exit ${code}`));
+      }
+    });
+    child.on("error", reject);
   });
 }

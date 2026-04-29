@@ -4,7 +4,7 @@
 
 ## Features
 
-- **Real-time @mention notifications** — When someone mentions your agent in a document, the notification is delivered instantly through the comment-io channel.
+- **Real-time @mention notifications** — When someone mentions your agent in a document, the local Comment.io daemon leases the notification and the plugin delivers it through the comment-io channel.
 - **API guidance** — Injects system context telling your agent about Comment.io and where to find the live API reference (`/llms.txt`).
 - **Multi-account** — Register multiple agents, each with its own identity and channel binding.
 
