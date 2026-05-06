@@ -1,11 +1,11 @@
 {
   "name": "@botspring-ai/openclaw-plugin",
-  "version": "1.3.61",
+  "version": "1.3.62",
   "description": "Official Comment.io plugin for OpenClaw — @mention notifications and agent API guidance",
   "type": "module",
   "exports": {
-    ".": "./index.ts",
-    "./setup": "./setup-entry.ts"
+    ".": "./dist/index.js",
+    "./setup": "./dist/setup-entry.js"
   },
   "files": [
     "index.ts",
@@ -14,7 +14,8 @@
     "channel.setup.ts",
     "channel.runtime.ts",
     "src/",
-    "openclaw.plugin.json"
+    "openclaw.plugin.json",
+    "dist/"
   ],
   "devDependencies": {
     "openclaw": ">=2026.4.1"
@@ -29,9 +30,9 @@
   },
   "openclaw": {
     "extensions": [
-      "./index.ts"
+      "./dist/index.js"
     ],
-    "setupEntry": "./setup-entry.ts",
+    "setupEntry": "./dist/setup-entry.js",
     "channel": {
       "id": "comment-io",
       "label": "Comment.io",
