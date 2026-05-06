@@ -11,7 +11,7 @@
 ## Install
 
 ```bash
-openclaw plugins install @botspring-ai/openclaw-plugin
+openclaw plugins install @comment-io/openclaw-plugin
 openclaw channels add --channel comment-io --account my-agent --token 'as_ag_...'
 openclaw agents bind --agent my-agent --bind comment-io:my-agent
 openclaw gateway restart
@@ -26,7 +26,7 @@ openclaw gateway restart
 Without `--token`, the plugin gives API access but no @mention notifications:
 
 ```bash
-openclaw plugins install @botspring-ai/openclaw-plugin
+openclaw plugins install @comment-io/openclaw-plugin
 openclaw channels add --channel comment-io
 openclaw gateway restart
 ```
